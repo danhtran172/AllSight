@@ -20,7 +20,7 @@
           <div class="section-heading"><button id="toggleSources" class="source-collapse"><span>⌄</span><p class="section-label">NGUỒN ẢNH</p></button><div class="source-actions"><button id="addSource" class="source-add-icon" title="Thêm nguồn ảnh">＋</button><button id="refreshSources" title="Quét lại">↻</button></div></div>
           <div id="sourcesList" class="source-list"></div>
         </section>
-        <div class="sidebar-bottom"><button id="languageButton" class="nav-item"><span>◈</span> <em data-i18n="language">Ngôn ngữ</em></button><button id="openPassword" class="nav-item"><span>◉</span> <em data-i18n="security">Bảo mật ứng dụng</em></button><button id="lockApp" class="nav-item"><span>◐</span> <em data-i18n="lock">Khóa ứng dụng</em></button></div>
+        <div class="sidebar-bottom"><button id="settingsButton" class="nav-item"><span>◉</span> <em>Settings</em></button></div>
       </aside>
 
       <main class="main-panel">
@@ -45,6 +45,7 @@
         <div id="inspectorBody" class="hidden">
           <div class="preview-wrap" id="previewWrap"></div>
           <div class="metadata"><h3 id="detailName"></h3><p id="detailPath"></p></div>
+          <section class="detail-section"><div class="detail-label">SOURCE FOLDER</div><div id="sourceFolderInfo" class="source-folder-info"></div></section>
           <label class="toggle-line"><span>Yêu thích</span><input type="checkbox" id="favoriteToggle" /><i></i></label>
           <section class="detail-section"><div class="detail-label detail-label-action">THEME <button class="property-add" data-picker="theme">＋</button></div><div id="tagPills" class="pill-box"></div></section>
           <section class="detail-section"><div class="detail-label detail-label-action">CHARACTER <button class="property-add" data-picker="character">＋</button></div><div id="personPills" class="pill-box person-box"></div></section>

@@ -99,6 +99,7 @@ function visibleAssets() {
 function activeLabel() {
   if (currentView === 'tag-manager') return 'Manage tags';
   if (currentView === 'library-folders') return 'Library';
+  if (currentView === 'settings') return 'Settings';
   if (currentCollection()) return currentCollection().name;
   if (currentSource()) return currentSource().name;
   return ({all:t('allMedia'), images:t('images'), videos:t('videos'), untagged:t('untagged')})[currentView] || t('library');
@@ -108,12 +109,13 @@ function applyZoom() { document.documentElement.style.setProperty('--thumb-heigh
 function updateSelectionUI() { const count=selectedIds.size, bulk=$('#bulkActions'), all=visibleAssets(); bulk.classList.toggle('hidden',count===0); $('#selectAll').textContent=count&&count===all.length?'☑':'□'; const group= count ? groupOf([...selectedIds][0]) : null; const sameGroup=group&&[...selectedIds].every(id=>group.assets.includes(id)); $('#dissolveGroup').classList.toggle('hidden',!sameGroup); }
 function confirmAction(message) { return window.confirm(message); }
 function render() {
-  $('#viewTitle').textContent = activeLabel(); $('#viewOverline').textContent = currentCollection() ? t('privateFolder') : currentSource() ? t('source') : t('library');
+  $('#viewTitle').textContent = activeLabel(); $('#viewOverline').textContent = currentView==='settings' ? 'SETTINGS' : currentCollection() ? t('privateFolder') : currentSource() ? t('source') : t('library');
   $('#editCollection').classList.toggle('hidden', !currentCollection());
   $('#assetCount').textContent = allAssets.length;
   renderSidebars();
   if(currentView==='tag-manager'){ $('.toolbar').classList.add('hidden'); $('#inspector').classList.add('hidden'); renderTagScreen(); return; }
   if(currentView==='library-folders'){ $('.toolbar').classList.add('hidden'); $('#inspector').classList.add('hidden'); renderLibraryFolders(); return; }
+  if(currentView==='settings'){ $('.toolbar').classList.add('hidden'); $('#inspector').classList.add('hidden'); renderSettings(); return; }
   $('.toolbar').classList.remove('hidden'); renderCanvas(); renderInspector();
 }
 function renderSidebars() {
@@ -125,6 +127,13 @@ function renderSidebars() {
   $$('.source-item[data-source]').forEach(button => button.addEventListener('click', ev => { if (ev.target.matches('.source-remove')) return; currentView = `source:${button.dataset.source}`; selectedId = null; selectedIds.clear(); render(); }));
   $$('.source-remove').forEach(button => button.addEventListener('click', ev => { ev.stopPropagation(); removeSource(button.dataset.removeSource); }));
   $$('.collection-item').forEach(button => {button.addEventListener('click', () => { currentView = `collection:${button.dataset.collection}`; selectedId = null; selectedIds.clear(); render(); });button.addEventListener('contextmenu',event=>{event.preventDefault();openFolderContextMenu(event,button.dataset.collection);});});
+}
+function renderSettings() {
+  const canvas=$('#canvas'),empty=$('#emptyState');empty.classList.add('hidden');canvas.className='settings-screen';canvas.classList.remove('hidden');
+  canvas.innerHTML=`<h2>Settings</h2><p>Manage access and language for this Allsight library.</p><div class="settings-list"><article class="settings-card"><div><h3>Password</h3><p>${store.passwordHash?'A password is configured for this app.':'Protect this app with a password.'}</p></div><button id="settingsPassword" class="secondary-button">${store.passwordHash?'Change password':'Set password'}</button></article><article class="settings-card"><div><h3>Lock app</h3><p>Lock Allsight now. A password is required.</p></div><button id="settingsLock" class="secondary-button" ${store.passwordHash?'':'disabled'}>Lock app</button></article><article class="settings-card"><div><h3>Language</h3><p>${store.language==='vi'?'Tiếng Việt':'English'}</p></div><button id="settingsLanguage" class="secondary-button">Change language</button></article></div>`;
+  $('#settingsPassword').onclick=openPasswordModal;
+  $('#settingsLock').onclick=()=>store.passwordHash?window.vision.lock():toast('Set a password first');
+  $('#settingsLanguage').onclick=openLanguageModal;
 }
 function renderTagScreen() {
   const canvas=$('#canvas'), empty=$('#emptyState'), isTheme=tagManagerKind==='theme', field=isTheme?'tags':'persons', definitions=isTheme?store.tagDefinitions:store.personDefinitions;
@@ -222,7 +231,7 @@ function renderInspector() {
   $('#inspectorEmpty').classList.toggle('hidden', !!asset || !!gallery); $('#inspectorBody').classList.toggle('hidden', !asset);
   if (gallery && !asset) return renderGalleryInspector(gallery);
   if (!asset) return;
-  const item = meta(asset.id), parentSource=store.sources.find(source=>source.id===asset.sourceId); $('#detailName').textContent = asset.name; $('#detailPath').textContent = `${parentSource?.name||'Library'} · ${asset.path}`; $('#previewWrap').innerHTML = asset.type === 'image' ? `<img src="${fileURL(asset.path)}">` : `<video src="${fileURL(asset.path)}" controls></video>`;
+  const item = meta(asset.id), parentSource=store.sources.find(source=>source.id===asset.sourceId); $('#detailName').textContent = asset.name; $('#detailPath').textContent = parentSource?.name||'Library'; $('#sourceFolderInfo').innerHTML = parentSource?`<strong>${escapeHTML(parentSource.name)}</strong><small>${escapeHTML(parentSource.path)}</small>`:'<span class="muted-small">No source folder</span>'; $('#previewWrap').innerHTML = asset.type === 'image' ? `<img src="${fileURL(asset.path)}">` : `<video src="${fileURL(asset.path)}" controls></video>`;
   $('#favoriteToggle').checked = !!item.favorite; pills('#tagPills',item.tags,'tags'); pills('#personPills',item.persons,'persons'); $('#assetNote').value = item.note || '';
   const memberships=store.collections.filter(collection=>collection.items.includes(asset.id)); $('#folderMembership').innerHTML=memberships.map(collection=>`<span class="pill"><span class="gallery-icon">▧</span>${escapeHTML(collection.name)}<button data-remove-folder="${collection.id}">×</button></span>`).join('') || '<span class="muted-small">Chưa thuộc Gallery nào</span>';
   $('#removeFromCollection').classList.toggle('hidden', !currentCollection());
@@ -325,7 +334,7 @@ function openModal(content) { $('#modal').innerHTML=content;$('#modalLayer').cla
 function bindEvents() {
   window.vision.onFolderChanged(scheduleSourceRefresh);
   window.vision.onMediaImported(reloadImportedMedia);
-  $('#addSource').onclick=addSource;$('#emptyAdd').onclick=addSource;$('#refreshSources').onclick=refreshSources;$('#toggleSources').onclick=async()=>{store.sourcesCollapsed=!store.sourcesCollapsed;await save();renderSidebars();};$('#libraryHome').onclick=()=>{currentView='library-folders';selectedId=null;render();};$('#addCollection').onclick=()=>openCollectionModal();$('#manageTags').onclick=()=>{currentView='tag-manager';selectedId=null;render();};$('#languageButton').onclick=openLanguageModal;$('#openPassword').onclick=openPasswordModal;$('#lockApp').onclick=()=>store.passwordHash?window.vision.lock():toast('Hãy đặt mật khẩu trước khi khóa');$('#toggleInspector').onclick=()=>$('#inspector').classList.toggle('hidden');$('#closeInspector').onclick=()=>$('#inspector').classList.add('hidden');
+  $('#addSource').onclick=addSource;$('#emptyAdd').onclick=addSource;$('#refreshSources').onclick=refreshSources;$('#toggleSources').onclick=async()=>{store.sourcesCollapsed=!store.sourcesCollapsed;await save();renderSidebars();};$('#libraryHome').onclick=()=>{currentView='library-folders';selectedId=null;selectedIds.clear();render();};$('#addCollection').onclick=()=>openCollectionModal();$('#manageTags').onclick=()=>{currentView='tag-manager';selectedId=null;selectedIds.clear();render();};$('#settingsButton').onclick=()=>{currentView='settings';selectedId=null;selectedIds.clear();render();};$('#toggleInspector').onclick=()=>$('#inspector').classList.toggle('hidden');$('#closeInspector').onclick=()=>$('#inspector').classList.add('hidden');
   $$('.nav-item[data-view]').forEach(button=>button.onclick=()=>{currentView=button.dataset.view;selectedId=null;render();}); $$('.filter-chip').forEach(button=>button.onclick=()=>{currentFilter=button.dataset.filter;$$('.filter-chip').forEach(x=>x.classList.toggle('selected',x===button));renderCanvas();});
   $('#searchInput').oninput=event=>{searchTerm=event.target.value;renderCanvas();}; $('#sortButton').onclick=()=>{allAssets.reverse();renderCanvas();}; $('#clearLayout').onclick=async()=>{allAssets.forEach((asset,index)=>meta(asset.id).order=Date.now()-index);await save();renderCanvas();};$('#editCollection').onclick=()=>openCollectionModal(currentCollection());
   $('#selectAll').onclick=()=>{const ids=visibleAssets().map(asset=>asset.id);selectedIds=selectedIds.size===ids.length?new Set():new Set(ids);selectedId=[...selectedIds][0]||null;render();}; $('#zoomIn').onclick=async()=>{store.zoom=Math.min(280,(store.zoom||155)+15);applyZoom();await save();renderCanvas();};$('#zoomOut').onclick=async()=>{store.zoom=Math.max(80,(store.zoom||155)-15);applyZoom();await save();renderCanvas();};$$('[data-bulk]').forEach(button=>button.onclick=()=>({folder:openBulkFolderPicker,group:bulkCreateGroup,tag:openBulkTagPicker,copy:async()=>{const first=allAssets.find(asset=>selectedIds.has(asset.id)&&asset.type==='image');if(first)await window.vision.copyImage(first.path);toast(`Copied ${selectedIds.size} selected image(s)`);},dissolve:dissolveSelectedGroup}[button.dataset.bulk]()));
