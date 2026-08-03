@@ -14,7 +14,22 @@ function removeZones() {
   draggedImageUrl = null;
 }
 function dropUrl(event) { return draggedImageUrl || event.dataTransfer?.getData('text/uri-list'); }
-function unsupported(url) { return !url || url.startsWith('blob:') || url.startsWith('data:'); }
+function isRemoteUrl(url) { return /^https?:/i.test(url || ''); }
+function readBlobAsDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Không thể đọc dữ liệu ảnh.'));
+    reader.readAsDataURL(blob);
+  });
+}
+async function copyDataFor(url, event) {
+  if (url?.startsWith('data:image/')) return url;
+  if (url?.startsWith('blob:')) return readBlobAsDataUrl(await fetch(url).then(response => response.blob()));
+  const file = event.dataTransfer?.files?.[0];
+  if (file?.type.startsWith('image/')) return readBlobAsDataUrl(file);
+  return null;
+}
 function createZone(kind, icon, title, subtitle) {
   const zone = document.createElement('div');
   zone.id = `allsight-${kind}-zone`;
@@ -24,10 +39,12 @@ function createZone(kind, icon, title, subtitle) {
   zone.addEventListener('drop', async event => {
     event.preventDefault();
     const url = dropUrl(event);
-    if (unsupported(url)) return showToast('Ảnh này không có URL web để xử lý.');
+    if (kind === 'save' && !isRemoteUrl(url)) return showToast('Ảnh này không có URL web để lưu vào AllSight.');
     zone.classList.add('is-saving');
     zone.querySelector('strong').textContent = kind === 'copy' ? 'Đang copy ảnh…' : 'Đang lưu vào AllSight…';
-    const result = await chrome.runtime.sendMessage({ type: kind === 'copy' ? 'copy-image' : 'save-image', url });
+    const localData = kind === 'copy' && !isRemoteUrl(url) ? await copyDataFor(url, event).catch(() => null) : null;
+    if (kind === 'copy' && !isRemoteUrl(url) && !localData) return showToast('Không thể đọc dữ liệu ảnh này để copy.');
+    const result = await chrome.runtime.sendMessage(kind === 'copy' && localData ? { type: 'copy-image-data', dataUrl: localData } : { type: kind === 'copy' ? 'copy-image' : 'save-image', url });
     showToast(result.ok ? (kind === 'copy' ? 'Image Copied!' : 'Image Saved!') : result.error);
     removeZones();
   });

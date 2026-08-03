@@ -20,6 +20,14 @@ async function copyImage(url) {
     return { ok: true };
   } catch (error) { return { ok: false, error: error.message }; }
 }
+async function copyImageData(dataUrl) {
+  try {
+    await ensureClipboardDocument();
+    const result = await chrome.runtime.sendMessage({ type: 'copy-image-to-clipboard', dataUrl });
+    if (!result?.ok) throw new Error(result?.error || 'Could not copy image');
+    return { ok: true };
+  } catch (error) { return { ok: false, error: error.message }; }
+}
 
 async function saveToAllSight(url) {
   try {
@@ -39,6 +47,7 @@ async function saveToAllSight(url) {
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'save-image' && message.url) saveToAllSight(message.url).then(sendResponse);
   else if (message?.type === 'copy-image' && message.url) copyImage(message.url).then(sendResponse);
+  else if (message?.type === 'copy-image-data' && message.dataUrl) copyImageData(message.dataUrl).then(sendResponse);
   else return false;
   return true;
 });
