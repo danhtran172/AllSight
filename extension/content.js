@@ -1,33 +1,43 @@
 let draggedImageUrl = null;
-let zone = null;
+let copyZone = null;
+let saveZone = null;
 
 function imageUrlFor(event) {
   const image = event.target.closest?.('img');
   return image?.currentSrc || image?.src || null;
 }
-function removeZone() {
-  zone?.remove();
-  zone = null;
+function removeZones() {
+  copyZone?.remove();
+  saveZone?.remove();
+  copyZone = null;
+  saveZone = null;
   draggedImageUrl = null;
 }
-function showZone() {
-  if (zone) return;
-  zone = document.createElement('div');
-  zone.id = 'allsight-drop-zone';
-  zone.innerHTML = '<span>＋</span><strong>Thả để lưu vào AllSight</strong><small>Web Imports</small>';
+function dropUrl(event) { return draggedImageUrl || event.dataTransfer?.getData('text/uri-list'); }
+function unsupported(url) { return !url || url.startsWith('blob:') || url.startsWith('data:'); }
+function createZone(kind, icon, title, subtitle) {
+  const zone = document.createElement('div');
+  zone.id = `allsight-${kind}-zone`;
+  zone.innerHTML = `<span>${icon}</span><strong>${title}</strong><small>${subtitle}</small>`;
   zone.addEventListener('dragover', event => { event.preventDefault(); zone.classList.add('is-over'); });
   zone.addEventListener('dragleave', () => zone.classList.remove('is-over'));
   zone.addEventListener('drop', async event => {
     event.preventDefault();
-    const url = draggedImageUrl || event.dataTransfer?.getData('text/uri-list');
-    if (!url || url.startsWith('blob:') || url.startsWith('data:')) return showToast('Ảnh này không có URL web để lưu.');
+    const url = dropUrl(event);
+    if (unsupported(url)) return showToast('Ảnh này không có URL web để xử lý.');
     zone.classList.add('is-saving');
-    zone.querySelector('strong').textContent = 'Đang lưu vào AllSight…';
-    const result = await chrome.runtime.sendMessage({ type: 'save-image', url });
-    showToast(result.ok ? 'Image Saved!' : result.error);
-    removeZone();
+    zone.querySelector('strong').textContent = kind === 'copy' ? 'Đang copy ảnh…' : 'Đang lưu vào AllSight…';
+    const result = await chrome.runtime.sendMessage({ type: kind === 'copy' ? 'copy-image' : 'save-image', url });
+    showToast(result.ok ? (kind === 'copy' ? 'Image Copied!' : 'Image Saved!') : result.error);
+    removeZones();
   });
-  document.documentElement.append(zone);
+  return zone;
+}
+function showZones() {
+  if (copyZone || saveZone) return;
+  copyZone = createZone('copy', '⧉', 'Thả để copy ảnh', 'Clipboard');
+  saveZone = createZone('save', '＋', 'Thả để lưu vào AllSight', 'Web Extention');
+  document.documentElement.append(copyZone, saveZone);
 }
 function showToast(message) {
   const toast = document.createElement('div');
@@ -41,9 +51,9 @@ document.addEventListener('dragstart', event => {
   const url = imageUrlFor(event);
   if (!url) return;
   draggedImageUrl = url;
-  showZone();
+  showZones();
 }, true);
-document.addEventListener('dragend', removeZone, true);
+document.addEventListener('dragend', removeZones, true);
 chrome.runtime.onMessage.addListener(message => {
   if (message?.type === 'allsight-result') showToast(message.ok ? 'Image Saved!' : message.error);
 });
