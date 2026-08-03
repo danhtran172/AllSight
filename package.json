@@ -1,0 +1,14 @@
+{
+  "name": "master-vision",
+  "version": "1.0.0",
+  "description": "A private visual library desktop app",
+  "productName": "Allsight",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^32.2.7"
+  }
+}
