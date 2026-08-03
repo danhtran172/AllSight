@@ -1,4 +1,4 @@
-# AllSight Web Importer
+# Web Extention
 
 Chrome extension for importing an image from a web page into the local AllSight desktop library.
 
@@ -14,4 +14,4 @@ Chrome extension for importing an image from a web page into the local AllSight 
 - Drag an image on any web page onto the floating **“Thả để lưu vào AllSight”** area.
 - Or right-click an image and choose **Save image to AllSight**.
 
-Images are stored locally in `Pictures/AllSight Web Imports` and appear in AllSight as the **Web Imports** source. The app must be open while importing.
+Images are stored locally in `Pictures/AllSight Web Imports` and appear in AllSight as the **Web Extention** source. The app must be open while importing.

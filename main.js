@@ -65,9 +65,10 @@ async function importWebImage(sourceUrl) {
   const data = await readStore();
   let source = data.sources?.find(item => item.id === WEB_IMPORTS_SOURCE_ID);
   if (!source) {
-    source = { id: WEB_IMPORTS_SOURCE_ID, path: directory, name: 'Web Imports', assets: [] };
+    source = { id: WEB_IMPORTS_SOURCE_ID, path: directory, name: 'Web Extention', assets: [] };
     data.sources = [...(data.sources || []), source];
   }
+  source.name = 'Web Extention';
   source.assets = await scanDirectory(directory);
   await writeStore(data);
   const asset = source.assets.find(item => item.path === target);

@@ -24,7 +24,7 @@ function showZone() {
     zone.classList.add('is-saving');
     zone.querySelector('strong').textContent = 'Đang lưu vào AllSight…';
     const result = await chrome.runtime.sendMessage({ type: 'save-image', url });
-    showToast(result.ok ? `Đã lưu “${result.name}” vào AllSight` : result.error);
+    showToast(result.ok ? 'Image Saved!' : result.error);
     removeZone();
   });
   document.documentElement.append(zone);
@@ -45,5 +45,5 @@ document.addEventListener('dragstart', event => {
 }, true);
 document.addEventListener('dragend', removeZone, true);
 chrome.runtime.onMessage.addListener(message => {
-  if (message?.type === 'allsight-result') showToast(message.ok ? `Đã lưu “${message.name}” vào AllSight` : message.error);
+  if (message?.type === 'allsight-result') showToast(message.ok ? 'Image Saved!' : message.error);
 });

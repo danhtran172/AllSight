@@ -36,7 +36,7 @@ async function reloadImportedMedia() {
   await syncSourceWatchers();
   if (selected && allAssets.some(asset => asset.id === selected)) selectedId = selected;
   render();
-  toast('Đã lưu ảnh từ Chrome vào Web Imports');
+  toast('Image Saved!');
 }
 function scheduleSourceRefresh(folder) {
   if (!store.sources.some(source => source.path === folder)) return;
