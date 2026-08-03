@@ -12,7 +12,7 @@
         <div class="brand"><span class="brand-mark">A</span><span>allsight</span></div>
         <div class="library-actions"><button id="manageTags" class="tag-manager-button">Quản lý tag</button></div>
         <nav class="side-section" id="libraryNav">
-          <div class="section-heading library-heading"><button id="libraryHome" class="library-home"><p class="section-label">THƯ VIỆN</p></button><button id="addCollection" title="Tạo thư mục cá nhân">＋</button></div>
+          <div class="section-heading library-heading"><button id="libraryHome" class="library-home"><p class="section-label">THƯ VIỆN</p></button><button id="addCollection" title="Create Gallery">＋</button></div>
           <button class="nav-item active" data-view="all"><span>◈</span> <em data-i18n="allMedia">Tất cả media</em> <b id="assetCount">0</b></button>
           <div id="collectionsList" class="collection-list library-collections"></div>
         </nav>
@@ -30,7 +30,7 @@
         </header>
         <section class="toolbar">
           <div class="filter-chip-row" id="filterBar"><button class="filter-chip selected" data-filter="all">Tất cả</button><button class="filter-chip" data-filter="favorites">★ Yêu thích</button><button class="filter-chip" data-filter="images">▧ Hình ảnh</button><button class="filter-chip" data-filter="videos">▷ Video</button></div>
-          <div class="toolbar-right"><div id="bulkActions" class="bulk-actions hidden"><button data-bulk="folder">＋ Folder</button><button data-bulk="group">◌ Group</button><button data-bulk="tag">＋ Tag</button><button data-bulk="copy">▣ Copy</button><button data-bulk="dissolve" id="dissolveGroup" class="hidden">Rã nhóm</button></div><div class="zoom-actions"><button id="zoomOut" title="Zoom out">−</button><span id="zoomValue">155</span><button id="zoomIn" title="Zoom in">＋</button></div><button id="editCollection" class="text-button hidden">Sửa thư mục</button><button id="sortButton" class="text-button">Mới nhất <span>⌄</span></button><button id="clearLayout" class="text-button">Sắp xếp lại</button></div>
+          <div class="toolbar-right"><div id="bulkActions" class="bulk-actions hidden"><button data-bulk="folder">＋ Gallery</button><button data-bulk="group">◌ Group</button><button data-bulk="tag">＋ Tag</button><button data-bulk="copy">▣ Copy</button><button data-bulk="dissolve" id="dissolveGroup" class="hidden">Rã nhóm</button></div><div class="zoom-actions"><button id="zoomOut" title="Zoom out">−</button><span id="zoomValue">155</span><button id="zoomIn" title="Zoom in">＋</button></div><button id="editCollection" class="text-button hidden">Edit Gallery</button><button id="sortButton" class="text-button">Mới nhất <span>⌄</span></button><button id="clearLayout" class="text-button">Sắp xếp lại</button></div>
         </section>
         <section id="content" class="content-area">
           <div id="emptyState" class="empty-state"><div class="empty-orb">✦</div><h2 data-i18n="emptyTitle">Không gian hình ảnh của bạn</h2><p data-i18n="emptyText">Thêm một thư mục để bắt đầu sắp xếp ảnh và video theo cách của riêng bạn.</p><button class="primary-button" id="emptyAdd" data-i18n="emptyAdd">Thêm thư mục đầu tiên</button></div>
@@ -40,7 +40,7 @@
       </main>
 
       <aside class="inspector hidden" id="inspector">
-        <div class="inspector-head"><div><p class="eyebrow">CHI TIẾT</p><h2>Đối tượng đã chọn</h2></div><button class="icon-button" id="closeInspector">×</button></div>
+        <div class="inspector-head"><div><p class="eyebrow" id="inspectorOverline">CHI TIẾT</p><h2 id="inspectorTitle">Đối tượng đã chọn</h2></div><button class="icon-button" id="closeInspector">×</button></div>
         <div id="inspectorEmpty" class="inspector-empty">Chọn một ảnh hoặc video để xem và chỉnh sửa thông tin.</div>
         <div id="inspectorBody" class="hidden">
           <div class="preview-wrap" id="previewWrap"></div>
@@ -48,9 +48,14 @@
           <label class="toggle-line"><span>Yêu thích</span><input type="checkbox" id="favoriteToggle" /><i></i></label>
           <section class="detail-section"><div class="detail-label detail-label-action">THEME <button class="property-add" data-picker="theme">＋</button></div><div id="tagPills" class="pill-box"></div></section>
           <section class="detail-section"><div class="detail-label detail-label-action">CHARACTER <button class="property-add" data-picker="character">＋</button></div><div id="personPills" class="pill-box person-box"></div></section>
-          <section class="detail-section"><div class="detail-label detail-label-action">THƯ MỤC CÁ NHÂN <button class="property-add" data-picker="folder">＋</button></div><div id="folderMembership" class="folder-membership"></div></section>
+          <section class="detail-section"><div class="detail-label detail-label-action">GALLERY <button class="property-add" data-picker="folder">＋</button></div><div id="folderMembership" class="folder-membership"></div></section>
           <section class="detail-section"><div class="detail-label">GHI CHÚ</div><textarea id="assetNote" placeholder="Viết ghi chú riêng..."></textarea></section>
           <button id="removeFromCollection" class="danger-button hidden">Gỡ khỏi thư mục này</button>
+        </div>
+        <div id="galleryInspector" class="hidden">
+          <section class="detail-section gallery-name-section"><div class="detail-label">GALLERY NAME</div><div class="gallery-name-row"><input id="galleryNameInput" class="gallery-name-input" /><button id="saveGalleryName" class="primary-button">Save</button></div></section>
+          <section class="detail-section"><div class="detail-label">AUTO TAG · THEME</div><div id="galleryThemeTags" class="pill-box"></div></section>
+          <section class="detail-section"><div class="detail-label">AUTO TAG · CHARACTER</div><div id="galleryCharacterTags" class="pill-box person-box"></div></section>
         </div>
       </aside>
     </div>
