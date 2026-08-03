@@ -30,6 +30,17 @@ async function copyDataFor(url, event) {
   if (file?.type.startsWith('image/')) return readBlobAsDataUrl(file);
   return null;
 }
+async function writeImageToClipboard(dataUrl) {
+  const blob = await fetch(dataUrl).then(response => response.blob());
+  const bitmap = await createImageBitmap(blob);
+  const canvas = document.createElement('canvas');
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0);
+  const png = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+  if (!png) throw new Error('Không thể xử lý ảnh để copy.');
+  await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]);
+}
 function createZone(kind, icon, title, subtitle) {
   const zone = document.createElement('div');
   zone.id = `allsight-${kind}-zone`;
@@ -39,12 +50,22 @@ function createZone(kind, icon, title, subtitle) {
   zone.addEventListener('drop', async event => {
     event.preventDefault();
     const url = dropUrl(event);
-    if (kind === 'save' && !isRemoteUrl(url)) return showToast('Ảnh này không có URL web để lưu vào AllSight.');
+    if (kind === 'save' && !isRemoteUrl(url)) { showToast('Ảnh này không có URL web để lưu vào AllSight.'); removeZones(); return; }
     zone.classList.add('is-saving');
     zone.querySelector('strong').textContent = kind === 'copy' ? 'Đang copy ảnh…' : 'Đang lưu vào AllSight…';
-    const localData = kind === 'copy' && !isRemoteUrl(url) ? await copyDataFor(url, event).catch(() => null) : null;
-    if (kind === 'copy' && !isRemoteUrl(url) && !localData) return showToast('Không thể đọc dữ liệu ảnh này để copy.');
-    const result = await chrome.runtime.sendMessage(kind === 'copy' && localData ? { type: 'copy-image-data', dataUrl: localData } : { type: kind === 'copy' ? 'copy-image' : 'save-image', url });
+    if (kind === 'copy') {
+      let dataUrl = await copyDataFor(url, event).catch(() => null);
+      if (!dataUrl && isRemoteUrl(url)) {
+        const fetched = await chrome.runtime.sendMessage({ type: 'get-image-data', url });
+        dataUrl = fetched?.ok ? fetched.dataUrl : null;
+      }
+      if (!dataUrl) { showToast('Không thể đọc dữ liệu ảnh này để copy.'); removeZones(); return; }
+      try { await writeImageToClipboard(dataUrl); showToast('Image Copied!'); }
+      catch (error) { showToast(error.message || 'Không thể copy ảnh.'); }
+      removeZones();
+      return;
+    }
+    const result = await chrome.runtime.sendMessage({ type: 'save-image', url });
     showToast(result.ok ? (kind === 'copy' ? 'Image Copied!' : 'Image Saved!') : result.error);
     removeZones();
   });
@@ -72,5 +93,5 @@ document.addEventListener('dragstart', event => {
 }, true);
 document.addEventListener('dragend', removeZones, true);
 chrome.runtime.onMessage.addListener(message => {
-  if (message?.type === 'web-extention-result') showToast(message.ok ? (message.action === 'copy-image-to-clipboard' ? 'Image Copied!' : 'Image Saved!') : message.error);
+  if (message?.type === 'web-extention-result') showToast(message.ok ? 'Image Saved!' : message.error);
 });

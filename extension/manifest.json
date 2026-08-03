@@ -3,7 +3,7 @@
   "name": "Web Extention",
   "version": "1.0.0",
   "description": "Save web images to AllSight.",
-  "permissions": ["contextMenus", "notifications", "clipboardWrite", "offscreen"],
+  "permissions": ["contextMenus", "notifications", "clipboardWrite"],
   "host_permissions": ["<all_urls>", "http://127.0.0.1:41741/*"],
   "background": { "service_worker": "background.js" },
   "content_scripts": [{

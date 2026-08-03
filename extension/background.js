@@ -1,31 +1,18 @@
 const BRIDGE_URL = 'http://127.0.0.1:41741/import';
 
-async function ensureClipboardDocument() {
-  const contexts = await chrome.runtime.getContexts({ contextTypes: ['OFFSCREEN_DOCUMENT'], documentUrls: [chrome.runtime.getURL('offscreen.html')] });
-  if (!contexts.length) await chrome.offscreen.createDocument({ url: 'offscreen.html', reasons: ['CLIPBOARD'], justification: 'Copy a web image when the user drops it in the AllSight copy zone.' });
-}
 function bytesToDataUrl(bytes, mime) {
   let binary = '';
   const view = new Uint8Array(bytes);
   for (let index = 0; index < view.length; index += 0x8000) binary += String.fromCharCode(...view.subarray(index, index + 0x8000));
   return `data:${mime};base64,${btoa(binary)}`;
 }
-async function copyImage(url) {
+async function fetchImageData(url) {
   try {
     const response = await fetch(url);
     if (!response.ok || !response.headers.get('content-type')?.startsWith('image/')) throw new Error('The dropped item is not an image');
-    await ensureClipboardDocument();
-    const result = await chrome.runtime.sendMessage({ type: 'copy-image-to-clipboard', dataUrl: bytesToDataUrl(await response.arrayBuffer(), response.headers.get('content-type').split(';')[0]) });
-    if (!result?.ok) throw new Error(result?.error || 'Could not copy image');
-    return { ok: true };
-  } catch (error) { return { ok: false, error: error.message }; }
-}
-async function copyImageData(dataUrl) {
-  try {
-    await ensureClipboardDocument();
-    const result = await chrome.runtime.sendMessage({ type: 'copy-image-to-clipboard', dataUrl });
-    if (!result?.ok) throw new Error(result?.error || 'Could not copy image');
-    return { ok: true };
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength > 25 * 1024 * 1024) throw new Error('Image is too large to copy');
+    return { ok: true, dataUrl: bytesToDataUrl(bytes, response.headers.get('content-type').split(';')[0]) };
   } catch (error) { return { ok: false, error: error.message }; }
 }
 
@@ -46,17 +33,16 @@ async function saveToAllSight(url) {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'save-image' && message.url) saveToAllSight(message.url).then(sendResponse);
-  else if (message?.type === 'copy-image' && message.url) copyImage(message.url).then(sendResponse);
-  else if (message?.type === 'copy-image-data' && message.dataUrl) copyImageData(message.dataUrl).then(sendResponse);
+  else if (message?.type === 'get-image-data' && message.url) fetchImageData(message.url).then(sendResponse);
   else return false;
   return true;
 });
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({ id: 'save-image-to-allsight', title: 'Save image to AllSight', contexts: ['image'] });
-  chrome.contextMenus.create({ id: 'copy-image-to-clipboard', title: 'Copy image', contexts: ['image'] });
 });
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  const result = info.menuItemId === 'copy-image-to-clipboard' ? await copyImage(info.srcUrl) : await saveToAllSight(info.srcUrl);
-  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'web-extention-result', action: info.menuItemId, ...result });
+  if (info.menuItemId !== 'save-image-to-allsight') return;
+  const result = await saveToAllSight(info.srcUrl);
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'web-extention-result', ...result });
 });
