@@ -45,9 +45,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({ id: 'save-image-to-allsight', title: 'Save image to AllSight', contexts: ['image'] });
+  chrome.contextMenus.create({ id: 'copy-image-to-clipboard', title: 'Copy image', contexts: ['image'] });
 });
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId !== 'save-image-to-allsight') return;
-  const result = await saveToAllSight(info.srcUrl);
-  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'allsight-result', ...result });
+  const result = info.menuItemId === 'copy-image-to-clipboard' ? await copyImage(info.srcUrl) : await saveToAllSight(info.srcUrl);
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'web-extention-result', action: info.menuItemId, ...result });
 });

@@ -35,7 +35,7 @@ function createZone(kind, icon, title, subtitle) {
 }
 function showZones() {
   if (copyZone || saveZone) return;
-  copyZone = createZone('copy', '⧉', 'Thả để copy ảnh', 'Clipboard');
+  copyZone = createZone('copy', '⧉', 'Copy image', 'Clipboard');
   saveZone = createZone('save', '＋', 'Thả để lưu vào AllSight', 'Web Extention');
   document.documentElement.append(copyZone, saveZone);
 }
@@ -55,5 +55,5 @@ document.addEventListener('dragstart', event => {
 }, true);
 document.addEventListener('dragend', removeZones, true);
 chrome.runtime.onMessage.addListener(message => {
-  if (message?.type === 'allsight-result') showToast(message.ok ? 'Image Saved!' : message.error);
+  if (message?.type === 'web-extention-result') showToast(message.ok ? (message.action === 'copy-image-to-clipboard' ? 'Image Copied!' : 'Image Saved!') : message.error);
 });
