@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "AllSight Web Importer",
+  "version": "1.0.0",
+  "description": "Drag web images into AllSight.",
+  "permissions": ["contextMenus", "notifications"],
+  "host_permissions": ["<all_urls>", "http://127.0.0.1:41741/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"],
+    "css": ["content.css"],
+    "run_at": "document_idle"
+  }],
+  "action": { "default_title": "AllSight Web Importer" }
+}

@@ -1,0 +1,31 @@
+const BRIDGE_URL = 'http://127.0.0.1:41741/import';
+
+async function saveToAllSight(url) {
+  try {
+    const response = await fetch(BRIDGE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || 'AllSight could not import this image');
+    return { ok: true, name: result.asset.name };
+  } catch (error) {
+    return { ok: false, error: error.message.includes('fetch') ? 'Open the AllSight desktop app first.' : error.message };
+  }
+}
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type !== 'save-image' || !message.url) return;
+  saveToAllSight(message.url).then(sendResponse);
+  return true;
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({ id: 'save-image-to-allsight', title: 'Save image to AllSight', contexts: ['image'] });
+});
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (info.menuItemId !== 'save-image-to-allsight') return;
+  const result = await saveToAllSight(info.srcUrl);
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'allsight-result', ...result });
+});

@@ -28,6 +28,16 @@ async function init() {
   if (store.passwordHash && sessionStorage.getItem('master-vision-unlocked') !== store.passwordHash) showUnlock(); else render();
 }
 async function syncSourceWatchers() { await window.vision.watchSources(store.sources.map(source => source.path)); }
+async function reloadImportedMedia() {
+  const selected = selectedId;
+  store = await window.vision.readStore();
+  store.sources ||= []; store.collections ||= []; store.assetMeta ||= {}; store.tagDefinitions ||= []; store.personDefinitions ||= []; store.libraryGroups ||= [];
+  await collectAssets();
+  await syncSourceWatchers();
+  if (selected && allAssets.some(asset => asset.id === selected)) selectedId = selected;
+  render();
+  toast('Đã lưu ảnh từ Chrome vào Web Imports');
+}
 function scheduleSourceRefresh(folder) {
   if (!store.sources.some(source => source.path === folder)) return;
   pendingSourcePaths.add(folder);
@@ -263,6 +273,7 @@ function showUnlock() { document.body.innerHTML=`<div class="unlock-screen"><div
 function openModal(content) { $('#modal').innerHTML=content;$('#modalLayer').classList.remove('hidden');$$('[data-close]').forEach(b=>b.onclick=closeModal); } function closeModal(){$('#modalLayer').classList.add('hidden');}
 function bindEvents() {
   window.vision.onFolderChanged(scheduleSourceRefresh);
+  window.vision.onMediaImported(reloadImportedMedia);
   $('#addSource').onclick=addSource;$('#emptyAdd').onclick=addSource;$('#refreshSources').onclick=refreshSources;$('#toggleSources').onclick=async()=>{store.sourcesCollapsed=!store.sourcesCollapsed;await save();renderSidebars();};$('#libraryHome').onclick=()=>{currentView='library-folders';selectedId=null;render();};$('#addCollection').onclick=()=>openCollectionModal();$('#manageTags').onclick=()=>{currentView='tag-manager';selectedId=null;render();};$('#languageButton').onclick=openLanguageModal;$('#openPassword').onclick=openPasswordModal;$('#lockApp').onclick=()=>store.passwordHash?window.vision.lock():toast('Hãy đặt mật khẩu trước khi khóa');$('#toggleInspector').onclick=()=>$('#inspector').classList.toggle('hidden');$('#closeInspector').onclick=()=>$('#inspector').classList.add('hidden');
   $$('.nav-item[data-view]').forEach(button=>button.onclick=()=>{currentView=button.dataset.view;selectedId=null;render();}); $$('.filter-chip').forEach(button=>button.onclick=()=>{currentFilter=button.dataset.filter;$$('.filter-chip').forEach(x=>x.classList.toggle('selected',x===button));renderCanvas();});
   $('#searchInput').oninput=event=>{searchTerm=event.target.value;renderCanvas();}; $('#sortButton').onclick=()=>{allAssets.reverse();renderCanvas();}; $('#clearLayout').onclick=async()=>{allAssets.forEach((asset,index)=>meta(asset.id).order=Date.now()-index);await save();renderCanvas();};$('#editCollection').onclick=()=>openCollectionModal(currentCollection());
