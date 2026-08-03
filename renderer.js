@@ -283,9 +283,9 @@ function openContextMenu(event,assetId) {
   if(!asset)return;
   menu.style.left=`${Math.min(event.clientX,window.innerWidth-245)}px`;menu.style.top=`${Math.min(event.clientY,window.innerHeight-250)}px`;menu.classList.remove('hidden');
   if(ids.length>=2) {
-    const sharedGroup=groupOf(ids[0]),allInSharedGroup=sharedGroup&&ids.every(id=>sharedGroup.assets.includes(id));
-    menu.innerHTML=`<button data-context-bulk-group>${allInSharedGroup?'Remove from group':'Create group'}</button><button data-context-bulk-hide>Hide image</button><button data-context-bulk-gallery>Add to Gallery</button>`;
-    menu.querySelector('[data-context-bulk-group]').onclick=()=>{closeContextMenu();if(allInSharedGroup)removeSelectedFromGroup();else bulkCreateGroup();};
+    const sharedGroup=groupOf(ids[0]),allInSharedGroup=sharedGroup&&ids.every(id=>sharedGroup.assets.includes(id)),allUngrouped=ids.every(id=>!groupOf(id));
+    menu.innerHTML=`${allInSharedGroup||allUngrouped?`<button data-context-bulk-group>${allInSharedGroup?'Remove from group':'Create group'}</button>`:''}<button data-context-bulk-hide>Hide image</button><button data-context-bulk-gallery>Add to Gallery</button>`;
+    menu.querySelector('[data-context-bulk-group]')?.addEventListener('click',()=>{closeContextMenu();if(allInSharedGroup)removeSelectedFromGroup();else bulkCreateGroup();});
     menu.querySelector('[data-context-bulk-hide]').onclick=async()=>{if(!confirmAction(`Hide ${ids.length} selected images?`))return;ids.forEach(id=>meta(id).hidden=true);await save();closeContextMenu();selectedId=null;selectedIds.clear();render();};
     menu.querySelector('[data-context-bulk-gallery]').onclick=()=>{closeContextMenu();openBulkFolderPicker();};
     return;
