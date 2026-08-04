@@ -2,7 +2,7 @@
   "name": "master-vision",
   "version": "1.0.0",
   "description": "A private visual library desktop app",
-  "productName": "Allsight",
+  "productName": "InDeck",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

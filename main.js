@@ -51,7 +51,7 @@ async function importWebImage(sourceUrl) {
   let url;
   try { url = new URL(sourceUrl); } catch { throw new Error('Invalid image URL'); }
   if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Only web image URLs are supported');
-  const response = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': 'AllSight Web Importer' } });
+  const response = await fetch(url, { redirect: 'follow', headers: { 'User-Agent': 'InDeck Web Importer' } });
   if (!response.ok) throw new Error(`Download failed (${response.status})`);
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.startsWith('image/')) throw new Error('The dropped item is not an image');
@@ -95,7 +95,7 @@ function startExtensionBridge() {
       } catch (error) { sendBridgeResponse(response, 400, { ok: false, error: error.message || 'Import failed' }); }
     });
   });
-  server.on('error', error => console.warn('AllSight extension bridge unavailable:', error.message));
+  server.on('error', error => console.warn('InDeck extension bridge unavailable:', error.message));
   server.listen(BRIDGE_PORT, '127.0.0.1');
   return server;
 }
@@ -153,7 +153,6 @@ app.whenReady().then(() => {
     return true;
   });
   ipcMain.handle('image:show-in-folder', (_, filePath) => shell.showItemInFolder(filePath));
-  ipcMain.handle('app:lock', () => app.quit());
   startExtensionBridge();
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
