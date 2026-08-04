@@ -17,5 +17,6 @@ contextBridge.exposeInMainWorld('vision', {
     return () => ipcRenderer.removeListener('media:imported', listener);
   },
   copyImage: filePath => ipcRenderer.invoke('image:copy', filePath),
-  showInFolder: filePath => ipcRenderer.invoke('image:show-in-folder', filePath)
+  showInFolder: filePath => ipcRenderer.invoke('image:show-in-folder', filePath),
+  permanentDelete: filePath => ipcRenderer.invoke('media:permanent-delete', filePath)
 });

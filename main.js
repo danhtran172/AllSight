@@ -153,6 +153,10 @@ app.whenReady().then(() => {
     return true;
   });
   ipcMain.handle('image:show-in-folder', (_, filePath) => shell.showItemInFolder(filePath));
+  ipcMain.handle('media:permanent-delete', async (_, filePath) => {
+    try { await fs.promises.unlink(filePath); return true; }
+    catch { return false; }
+  });
   startExtensionBridge();
   createWindow();
   app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });

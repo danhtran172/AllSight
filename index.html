@@ -16,10 +16,6 @@
           <button class="nav-item active" data-view="all"><span>◈</span> <em data-i18n="allMedia">Tất cả media</em> <b id="assetCount">0</b></button>
           <div id="collectionsList" class="collection-list library-collections"></div>
         </nav>
-        <section class="side-section sources-section">
-          <div class="section-heading"><button id="toggleSources" class="source-collapse"><span>⌄</span><p class="section-label">NGUỒN ẢNH</p></button><div class="source-actions"><button id="addSource" class="source-add-icon" title="Thêm nguồn ảnh">＋</button><button id="refreshSources" title="Quét lại">↻</button></div></div>
-          <div id="sourcesList" class="source-list"></div>
-        </section>
         <div class="sidebar-bottom"><button id="settingsButton" class="nav-item"><span>◉</span> <em>Settings</em></button></div>
       </aside>
 
@@ -50,6 +46,7 @@
           <section class="detail-section"><div class="detail-label detail-label-action">THEME <button class="property-add" data-picker="theme">＋</button></div><div id="tagPills" class="pill-box"></div></section>
           <section class="detail-section"><div class="detail-label detail-label-action">CHARACTER <button class="property-add" data-picker="character">＋</button></div><div id="personPills" class="pill-box person-box"></div></section>
           <section class="detail-section"><div class="detail-label detail-label-action">GALLERY <button class="property-add" data-picker="folder">＋</button></div><div id="folderMembership" class="folder-membership"></div></section>
+          <section id="discardOriginSection" class="detail-section hidden"><div class="detail-label">DISCARDED FROM</div><div id="discardOriginInfo" class="muted-small"></div></section>
           <section class="detail-section"><div class="detail-label">GHI CHÚ</div><textarea id="assetNote" placeholder="Viết ghi chú riêng..."></textarea></section>
           <button id="removeFromCollection" class="danger-button hidden">Gỡ khỏi thư mục này</button>
         </div>
