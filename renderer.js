@@ -1,6 +1,6 @@
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
-let store, allAssets = [], currentView = 'all', currentFilter = 'all', selectedId = null, selectedIds = new Set(), searchTerm = '', hoverTimer = null, hoverTargetId = null, dragId = null, dragGroupId = null, autoScrollFrame = null, autoScrollVelocity = 0, masonryFrame = null, tagManagerKind = 'theme', copiedTagGroup = null, lightboxAssets = [], lightboxIndex = -1, sourceRefreshTimer = null, sourceRefreshInProgress = false, ungroupedDuringDrag = false, discardOriginGalleryId = null, lockedGalleryId = null;
+let store, allAssets = [], currentView = 'all', currentFilter = 'all', selectedId = null, selectedIds = new Set(), searchTerm = '', hoverTimer = null, hoverTargetId = null, dragId = null, dragGroupId = null, autoScrollFrame = null, autoScrollVelocity = 0, masonryFrame = null, justifiedObserver = null, tagManagerKind = 'theme', copiedTagGroup = null, lightboxAssets = [], lightboxIndex = -1, sourceRefreshTimer = null, sourceRefreshInProgress = false, ungroupedDuringDrag = false, discardOriginGalleryId = null, lockedGalleryId = null;
 const unlockedGalleryIds = new Set();
 const pendingSourcePaths = new Set();
 const colors = ['#a78bfa','#f6a86f','#65c7c7','#e9cd63','#e98daa','#83b96b'];
@@ -232,6 +232,7 @@ function renderCanvas() {
   let html=layout.map(item=>item.kind==='asset' ? cardHTML(item.asset) : `<section class="group-shell ${item.group.collapsed?'collapsed':''}" style="--group-rows:${Math.ceil(item.members.length/groupColumns)}" data-group="${item.group.id}" data-layout-key="group:${item.group.id}"><button class="group-drag-handle" draggable="true" title="Kéo cả nhóm">⠿</button><div class="group-members">${(item.group.collapsed?item.members.filter(asset=>asset.id===(item.group.coverId||item.members[0]?.id)):item.members).map(asset=>cardHTML(asset,true)).join('')}</div><span class="group-count">${item.members.length}</span></section>`).join('');
   if (!html) html = '<div class="canvas-empty">Không có media phù hợp với bộ lọc này.</div>';
   canvas.innerHTML = html;
+  justifiedObserver ||= new ResizeObserver(scheduleMasonry);justifiedObserver.disconnect();justifiedObserver.observe(canvas);
   $$('.group-shell.collapsed').forEach(group=>{group.draggable=true;});
   canvas.addEventListener('dragover',event=>{if(event.target===canvas&&dragId&&groupOf(dragId)){event.preventDefault();scheduleUngroup(dragId,null);}});
   $$('.asset-card').forEach(card => {
@@ -260,7 +261,29 @@ function renderCanvas() {
   enableMarqueeSelection(canvas);
   updateSelectionUI();
 }
-function scheduleMasonry() { if(masonryFrame)return; masonryFrame=requestAnimationFrame(()=>{masonryFrame=null;const row=8,gap=15;$$('.asset-canvas > .asset-card,.asset-canvas > .group-shell').forEach(item=>item.style.setProperty('--masonry-span',Math.max(1,Math.ceil((item.getBoundingClientRect().height+gap)/(row+gap)))));}); }
+function scheduleMasonry() {
+  if(masonryFrame)return;
+  masonryFrame=requestAnimationFrame(()=>{
+    masonryFrame=null;
+    const canvas=$('#canvas');if(!canvas?.classList.contains('asset-canvas'))return;
+    const gap=10,targetHeight=store.zoom||155,width=Math.max(1,canvas.clientWidth-68);
+    let row=[];
+    const ratioOf=node=>{const media=node.querySelector('img,video');const width=media?.naturalWidth||media?.videoWidth||0,height=media?.naturalHeight||media?.videoHeight||0;return width&&height?width/height:1;};
+    const applyRow=(last=false)=>{
+      if(!row.length)return;
+      const ratio=row.reduce((sum,item)=>sum+item.ratio,0);
+      const height=last?targetHeight:(width-gap*(row.length-1))/ratio;
+      row.forEach(item=>{item.node.style.setProperty('--thumb-height',`${height}px`);item.node.style.setProperty('width',`${Math.max(42,height*item.ratio)}px`,'important');});
+      row=[];
+    };
+    [...canvas.children].forEach(node=>{
+      if(!node.classList.contains('asset-card')){applyRow();return;}
+      const ratio=ratioOf(node);row.push({node,ratio});
+      if(row.reduce((sum,item)=>sum+item.ratio,0)*targetHeight+gap*(row.length-1)>=width)applyRow();
+    });
+    applyRow(true);
+  });
+}
 function enableMarqueeSelection(canvas) { canvas.onpointerdown=event=>{if(event.button!==0||event.target!==canvas)return;const origin={x:event.clientX,y:event.clientY};const box=document.createElement('div');box.className='selection-marquee';document.body.append(box);const update=move=>{const left=Math.min(origin.x,move.clientX),top=Math.min(origin.y,move.clientY),right=Math.max(origin.x,move.clientX),bottom=Math.max(origin.y,move.clientY);Object.assign(box.style,{left:`${left}px`,top:`${top}px`,width:`${right-left}px`,height:`${bottom-top}px`});selectedIds=new Set($$('.asset-card').filter(card=>{const r=card.getBoundingClientRect();return r.left<right&&r.right>left&&r.top<bottom&&r.bottom>top;}).map(card=>card.dataset.id));selectedId=[...selectedIds].at(-1)||null;$$('.asset-card').forEach(card=>card.classList.toggle('selected',selectedIds.has(card.dataset.id)));};const end=()=>{box.remove();window.removeEventListener('pointermove',update);window.removeEventListener('pointerup',end);$('#inspector').classList.toggle('hidden',selectedIds.size!==1);updateSelectionUI();renderInspector();};window.addEventListener('pointermove',update);window.addEventListener('pointerup',end,{once:true});}; }
 function updateAutoScroll(event) { const content=$('#content'), rect=content.getBoundingClientRect(), edge=92; const topDistance=event.clientY-rect.top, bottomDistance=rect.bottom-event.clientY; if(topDistance<edge)autoScrollVelocity=-Math.max(4,Math.round((edge-topDistance)/edge*22)); else if(bottomDistance<edge)autoScrollVelocity=Math.max(4,Math.round((edge-bottomDistance)/edge*22)); else { stopAutoScroll(); return; } if(autoScrollFrame)return; const step=()=>{const before=content.scrollTop;content.scrollTop+=autoScrollVelocity;if(content.scrollTop===before){stopAutoScroll();return;}autoScrollFrame=requestAnimationFrame(step);};autoScrollFrame=requestAnimationFrame(step); }
 function stopAutoScroll() { autoScrollVelocity=0;if(autoScrollFrame){cancelAnimationFrame(autoScrollFrame);autoScrollFrame=null;} }
