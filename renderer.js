@@ -1,6 +1,6 @@
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
-let store, allAssets = [], currentView = 'all', currentFilter = 'all', selectedId = null, selectedIds = new Set(), searchTerm = '', hoverTimer = null, hoverTargetId = null, dragId = null, dragGroupId = null, autoScrollFrame = null, autoScrollVelocity = 0, masonryFrame = null, tagManagerKind = 'theme', copiedTagGroup = null, lightboxAssets = [], lightboxIndex = -1, sourceRefreshTimer = null, sourceRefreshInProgress = false, ungroupedDuringDrag = false, discardOriginGalleryId = null;
+let store, allAssets = [], currentView = 'all', currentFilter = 'all', selectedId = null, selectedIds = new Set(), searchTerm = '', hoverTimer = null, hoverTargetId = null, dragId = null, dragGroupId = null, autoScrollFrame = null, autoScrollVelocity = 0, masonryFrame = null, tagManagerKind = 'theme', copiedTagGroup = null, lightboxAssets = [], lightboxIndex = -1, sourceRefreshTimer = null, sourceRefreshInProgress = false, ungroupedDuringDrag = false, discardOriginGalleryId = null, lockedGalleryId = null;
 const unlockedGalleryIds = new Set();
 const pendingSourcePaths = new Set();
 const colors = ['#a78bfa','#f6a86f','#65c7c7','#e9cd63','#e98daa','#83b96b'];
@@ -117,6 +117,7 @@ function activeLabel() {
   if (currentView === 'library-folders') return 'Library';
   if (currentView === 'settings') return 'Settings';
   if (currentView === 'discard-pile') return 'Discard Pile';
+  if (currentView === 'locked-gallery') return 'Locked Gallery';
   if (currentCollection()) return currentCollection().name;
   if (currentSource()) return currentSource().name;
   return ({all:t('allMedia'), images:t('images'), videos:t('videos'), untagged:t('untagged')})[currentView] || t('library');
@@ -134,12 +135,13 @@ function render() {
   if(currentView==='library-folders'){ $('.toolbar').classList.add('hidden'); $('#inspector').classList.add('hidden'); renderLibraryFolders(); return; }
   if(currentView==='settings'){ $('.toolbar').classList.add('hidden'); $('#inspector').classList.add('hidden'); renderSettings(); return; }
   if(currentView==='discard-pile'){ $('.toolbar').classList.add('hidden'); renderDiscardPile(); renderInspector(); return; }
+  if(currentView==='locked-gallery'){ $('.toolbar').classList.add('hidden'); $('#inspector').classList.add('hidden'); renderLockedGallery(); return; }
   $('.toolbar').classList.remove('hidden'); renderCanvas(); renderInspector();
 }
 function openGallery(galleryId) {
   const gallery=store.collections.find(item=>item.id===galleryId);
   if(!gallery)return;
-  if(gallery.locked&&!unlockedGalleryIds.has(gallery.id))return showGalleryUnlock(gallery);
+  if(gallery.locked&&!unlockedGalleryIds.has(gallery.id)){lockedGalleryId=gallery.id;currentView='locked-gallery';selectedId=null;selectedIds.clear();render();return;}
   currentView=`collection:${gallery.id}`;selectedId=null;selectedIds.clear();render();
 }
 function requestGalleryPassword(gallery, action) {
@@ -163,6 +165,12 @@ function renderSettings() {
   $('#settingsLock').onclick=lockApp;
   $('#settingsDiscardPile').onclick=()=>{currentView='discard-pile';selectedId=null;selectedIds.clear();render();};
   $('#settingsLanguage').onclick=openLanguageModal;
+}
+function renderLockedGallery() {
+  const canvas=$('#canvas'),empty=$('#emptyState'),gallery=store.collections.find(item=>item.id===lockedGalleryId);empty.classList.add('hidden');canvas.className='locked-gallery-screen';canvas.classList.remove('hidden');
+  canvas.innerHTML=`<div class="gallery-lock-card"><div class="gallery-lock-icon">🔒</div><h2>Unlock to view contents</h2><p>${gallery?escapeHTML(gallery.name):'Locked Gallery'}</p><input id="lockedGalleryPassword" type="password" autofocus placeholder="Enter Password"><small id="lockedGalleryError"></small></div>`;
+  const input=$('#lockedGalleryPassword'),unlock=async()=>{if(!gallery)return;if(await hash(input.value)===store.passwordHash){unlockedGalleryIds.add(gallery.id);lockedGalleryId=null;openGallery(gallery.id);}else{$('#lockedGalleryError').textContent='Incorrect password';input.select();input.focus();}};
+  input.onkeydown=event=>{if(event.key==='Enter')unlock();};requestAnimationFrame(()=>input.focus());
 }
 function discardEntries() { return store.collections.flatMap(gallery=>(gallery.discardedIds||[]).map(assetId=>({gallery,asset:allAssets.find(asset=>asset.id===assetId)})).filter(entry=>entry.asset)); }
 async function restoreDiscardEntry(gallery,assetId) { gallery.discardedIds=(gallery.discardedIds||[]).filter(id=>id!==assetId);await save();selectedId=null;selectedIds.clear();discardOriginGalleryId=null;render(); }
